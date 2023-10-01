@@ -124,7 +124,7 @@
         const activeProduct = document.querySelector(select.all.menuProductsActive);
 
         /* if there is active product and it's not thisProduct.element, remove class active from it */
-        if (activeProduct != null && activeProduct != thisProduct.element) {
+        if (activeProduct && activeProduct != thisProduct.element) {
           activeProduct.classList.remove(classNames.menuProduct.wrapperActive)
         }
         /* toggle active class on thisProduct.element */
@@ -149,6 +149,7 @@
       thisProduct.dom.cartButton.addEventListener('click', function (event) {
         event.preventDefault();
         thisProduct.processOrder();
+        thisProduct.addToCart();
       });
     }
 
@@ -173,11 +174,11 @@
           const optionSelected = formData[paramId] && formData[paramId].includes(optionId);
           if (optionSelected) {
             //optionImage.classList.add(classNames.menuProduct.imageVisible)
-            if (!option.default === true) {
+            if (!option.default) {
               price += option.price;
             }
           } else {
-            if (option.default === true) {
+            if (option.default) {
               price -= option.price;
             }
           }
@@ -194,6 +195,8 @@
 
       // multiply price by amount */
       price *= thisProduct.amountWidget.value;
+
+      thisProduct.priceSingle = price;
 
       // update calculated price in the HTML
       thisProduct.dom.priceElem.innerHTML = price;
@@ -219,6 +222,58 @@
         thisProduct.processOrder();
       })
     }
+
+    addToCart() {
+      const thisProduct = this;
+
+      app.cart.add(thisProduct.prepareCartProduct());
+    }
+
+    prepareCartProduct() {
+      const thisProduct = this;
+
+      const productSummary = {};
+
+      productSummary.id = thisProduct.id;
+      productSummary.name = thisProduct.data.name;
+      productSummary.amount = thisProduct.amountWidget.value;
+      productSummary.priceSingle = thisProduct.priceSingle;
+      productSummary.price = thisProduct.priceSingle * thisProduct.amountWidget.value;
+      productSummary.params = thisProduct.prepareCartProductParams();
+
+      return productSummary;
+    }
+
+    prepareCartProductParams() {
+      const thisProduct = this;
+  
+      const formData = utils.serializeFormToObject(thisProduct.dom.form);
+      
+      const params = {};
+
+      for (let paramId in thisProduct.data.params) {
+        
+        const param = thisProduct.data.params[paramId];
+
+        params[paramId] = {
+          label: param.label,
+          options: {},
+        }
+
+        for (let optionId in param.options) {
+
+          const option = param.options[optionId];
+          const optionSelected = formData[paramId] && formData[paramId].includes(optionId);
+
+          if (optionSelected) {
+            
+            params[paramId].options[optionId] = option.label; 
+          }
+        }
+      }
+      
+      return params;
+    }     
   }
 
   class AmountWidget {
@@ -235,8 +290,8 @@
 
       thisWidget.initActions();
 
-      console.log('AmountWidget:', thisWidget);
-      console.log('construktor arguments:', element);
+      //console.log('AmountWidget:', thisWidget);
+      //console.log('construktor arguments:', element);
     }
 
     getElements(element) {
@@ -299,7 +354,7 @@
       thisCart.getElements(element);
       thisCart.initActions();
 
-      console.log('new Cart', thisCart);
+      //console.log('new Cart', thisCart);
     }
 
     getElements(element) {
@@ -309,6 +364,7 @@
 
       thisCart.dom.wrapper = element;
       thisCart.dom.toggleTrigger = thisCart.dom.wrapper.querySelector(select.cart.toggleTrigger);
+      thisCart.dom.productList = thisCart.dom.wrapper.querySelector(select.cart.productList);
     }
 
     initActions() {
@@ -317,6 +373,18 @@
       thisCart.dom.toggleTrigger.addEventListener('click', function() {
         thisCart.dom.wrapper.classList.toggle(classNames.cart.wrapperActive);
       })
+    }
+
+    add(menuProduct) {
+      const thisCart = this;
+
+      const generatedHTML = templates.cartProduct(menuProduct);
+
+      const generatedDOM = utils.createDOMFromHTML(generatedHTML);
+
+      thisCart.dom.productList.appendChild(generatedDOM);
+
+      console.log('adding product', menuProduct);
     }
   }
 
