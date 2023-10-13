@@ -155,8 +155,8 @@ class Product {
     productSummary.id = thisProduct.id;
     productSummary.name = thisProduct.data.name;
     productSummary.amount = thisProduct.amountWidget.value;
-    productSummary.priceSingle = thisProduct.priceSingle;
-    productSummary.price = thisProduct.priceSingle * thisProduct.amountWidget.value;
+    productSummary.priceSingle = thisProduct.priceSingle / thisProduct.amountWidget.value;
+    productSummary.price = thisProduct.priceSingle /* thisProduct.amountWidget.value; */
     productSummary.params = thisProduct.prepareCartProductParams();
 
     return productSummary;
